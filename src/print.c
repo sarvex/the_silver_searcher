@@ -14,6 +14,19 @@ int first_file_match = 1;
 
 const char *color_reset = "\033[0m\033[K";
 
+const char *normalize_path(const char *path) {
+    if (strlen(path) < 3) {
+        return path;
+    }
+    if (path[0] == '.' && path[1] == '/') {
+        return path + 2;
+    }
+    if (path[0] == '/' && path[1] == '/') {
+        return path + 1;
+    }
+    return path;
+}
+
 void print_path(const char *path, const char sep) {
     path = normalize_path(path);
 
@@ -41,8 +54,36 @@ void print_path_count(const char *path, const char sep, const size_t count) {
     }
 }
 
+void print_line_number(size_t line, const char sep) {
+    if (!opts.print_line_numbers) {
+        return;
+    }
+    if (opts.search_stream && opts.stream_line_num) {
+        line = opts.stream_line_num;
+    }
+    if (opts.color) {
+        fprintf(out_fd, "%s%lu%s%c", opts.color_line_number, (unsigned long)line, color_reset, sep);
+    } else {
+        fprintf(out_fd, "%lu%c", (unsigned long)line, sep);
+    }
+}
+
+void print_column_number(const match_t matches[], size_t last_printed_match,
+                         size_t prev_line_offset, const char sep) {
+    fprintf(out_fd, "%lu%c",
+            (unsigned long)(matches[last_printed_match].start - prev_line_offset) + 1,
+            sep);
+}
+
 void print_line(const char *buf, size_t buf_pos, size_t prev_line_offset) {
     fwrite(buf + prev_line_offset, 1, buf_pos - prev_line_offset + 1, out_fd);
+}
+
+void print_file_separator(void) {
+    if (first_file_match == 0 && opts.print_break) {
+        fprintf(out_fd, "\n");
+    }
+    first_file_match = 0;
 }
 
 void print_binary_file_matches(const char *path) {
@@ -238,47 +279,6 @@ void print_file_matches(const char *path, const char *buf, const size_t buf_len,
         }
     }
     free(context_prev_lines);
-}
-
-void print_line_number(size_t line, const char sep) {
-    if (!opts.print_line_numbers) {
-        return;
-    }
-    if (opts.search_stream && opts.stream_line_num) {
-        line = opts.stream_line_num;
-    }
-    if (opts.color) {
-        fprintf(out_fd, "%s%lu%s%c", opts.color_line_number, (unsigned long)line, color_reset, sep);
-    } else {
-        fprintf(out_fd, "%lu%c", (unsigned long)line, sep);
-    }
-}
-
-void print_column_number(const match_t matches[], size_t last_printed_match,
-                         size_t prev_line_offset, const char sep) {
-    fprintf(out_fd, "%lu%c",
-            (unsigned long)(matches[last_printed_match].start - prev_line_offset) + 1,
-            sep);
-}
-
-void print_file_separator(void) {
-    if (first_file_match == 0 && opts.print_break) {
-        fprintf(out_fd, "\n");
-    }
-    first_file_match = 0;
-}
-
-const char *normalize_path(const char *path) {
-    if (strlen(path) < 3) {
-        return path;
-    }
-    if (path[0] == '.' && path[1] == '/') {
-        return path + 2;
-    }
-    if (path[0] == '/' && path[1] == '/') {
-        return path + 1;
-    }
-    return path;
 }
 
 void print_results(const char *buf, const size_t buf_len, const char *dir_full_path, search_results_t *sr) {
