@@ -6,7 +6,7 @@
 import sys
 
 if len(sys.argv) != 2:
-    print("Usage: %s big_file.txt" % sys.argv[0])
+    print(f"Usage: {sys.argv[0]} big_file.txt")
     sys.exit(1)
 
 big_file = sys.argv[1]
